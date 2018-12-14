@@ -27,10 +27,10 @@ class Trainer():
         self.save_interval = save_interval 
         self.iteration = 0
 
-        #self.loss_fn = torch.nn.MSELoss(reduction='sum')
+        self.loss_fn = torch.nn.MSELoss(reduction='mean')
         #self.loss_fn = torch.nn.MSELoss(reduction='elementwise_mean')
-        self.loss_fn = torch.nn.MSELoss(size_average=True)
-        self.loss_fn2 = torch.nn.MSELoss(size_average=False)
+        #self.loss_fn = torch.nn.MSELoss(size_average=True)
+        #self.loss_fn2 = torch.nn.MSELoss(size_average=False)
 
         cpFile = self.exp_path + '/hp-best.pth'
         if tryRestore(mode, cpFile, model, optimizer): # append
@@ -44,12 +44,17 @@ class Trainer():
         self.model.train()  # set training mode
         self.iteration = 0 
         best_dev_loss = self.eval()
+
         for ep in range(epoch):
             epoch_tic = time.time()
             for batch_idx, (data, target) in enumerate(self.loader):
+                '''
                 if self.device != None:
                     data, target = data.cuda(self.device), target.cuda(self.device)
+                '''
                 self.optimizer.zero_grad()
+                #self.model.zero_grad()
+                self.model.hidden = self.model.init_hidden(data[0].shape[0])
 
                 # forward pass
                 output = self.model(data)
@@ -71,7 +76,7 @@ class Trainer():
                     dev_loss = self.eval()
                     if dev_loss < best_dev_loss:
                         best_dev_loss = dev_loss
-                        saveModel('%s/lm-best.pth' % self.exp_path, 
+                        saveModel('%s/hp-best.pth' % self.exp_path, 
                                   self.model, self.optimizer)
                 #if self.iteration % self.save_interval == 0:
                 #    self.saveModel()
@@ -82,7 +87,7 @@ class Trainer():
             #dev_loss = self.eval()
             #if dev_loss < best_dev_loss:
             #    best_dev_loss = dev_loss
-            #    saveModel('%s/lm-best.pth' % self.exp_path, self.model, self.optimizer)
+            #    saveModel('%s/hp-best.pth' % self.exp_path, self.model, self.optimizer)
 
     def eval(self, loader=None, name=''):
         if loader == None:
@@ -93,12 +98,16 @@ class Trainer():
         correct = 0
         with torch.no_grad():
             for data, target in loader:
+                '''
                 if self.device != None:
                     data, target = data.to(self.device), target.to(self.device)
+                '''
 
                 # calculate accumulated loss
+                self.model.hidden = self.model.init_hidden(data[0].shape[0])
+
                 output = self.model(data)
-                loss += self.loss_fn2(torch.squeeze(output), target.float()) # sum up batch loss
+                loss += self.loss_fn(torch.squeeze(output), target.float()) # sum up batch loss
 
         loss /= len(loader.dataset)
         print('{} set: Average loss: {:.4f}'.format(name, loss.item()))
@@ -106,22 +115,3 @@ class Trainer():
             self.dev_logger.writeLoss(self.iteration, loss.item())
 
         return loss
-
-    def calc(self, loader, idx2label):
-        self.model.eval()  # set evaluation mode
-        softmax = torch.nn.Softmax(dim=1).cuda()
-        label2res = {}
-        with torch.no_grad():
-            for data, ids in tqdm(loader):
-                if self.device != None:
-                    data = data.to(self.device)
-
-                output = self.model(data)
-                confidence = softmax(output)
-                maxConf = confidence.max(1)
-                conf = maxConf[0].cpu().numpy()
-                pred = maxConf[1].cpu().numpy()
-                for i in range(len(pred)):
-                    tmp = '%d %.6f' % (idx2label[pred[i]], conf[i])
-                    label2res[ids[i]] = tmp
-        return label2res

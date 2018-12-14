@@ -4,6 +4,38 @@ import argparse
 import csv
 import os.path
 
+from vocab import PAD_ID, UNK_ID
+import re
+
+def split_by_whitespace(sentence):                               
+    words = []                                                             
+    for space_separated_fragment in sentence.strip().split():       
+        words.extend(re.split(" ", space_separated_fragment))              
+    return [w for w in words if w] 
+
+def cleanup_tokens(tokens):
+    words = []
+    for tk in tokens:
+        tmp = ''
+        for c in tk:
+            if not c.isalnum():
+                continue
+            tmp += c.lower()
+        if tmp:
+            words.append(tmp)
+    return words
+
+def sentence_to_token_ids(sentence, word2id):                              
+    tokens = split_by_whitespace(sentence) # list of strings
+    clean_tokens = cleanup_tokens(tokens)
+    ids = [word2id.get(w, UNK_ID) for w in clean_tokens]                         
+    return tokens, clean_tokens, ids
+
+def padded(idsList, tgtLength):
+    if len(idsList) > tgtLength:
+        return idsList[:tgtLength]
+    return idsList + [PAD_ID]*(tgtLength - len(idsList))
+
 def getArgParser():
     parser = argparse.ArgumentParser(description='Housing Price Prediction Project')
     parser.add_argument('--experiment_name', metavar='EXP_NAME', default='unknown', 
@@ -107,25 +139,4 @@ def loadLabel2Idx(fileName):
             idx2label[idx] = label
 
     return label2idx, idx2label
-
-def genResultFile(mode, testCSVfile, resultCSVfile, label2result):
-    outputFile = open(resultCSVfile, 'w')
-    CSVwriter = csv.writer(outputFile)
-    if mode == 'submit0':
-        CSVwriter.writerow(('id', 'landmarks'))
-    elif mode == 'submit1':
-        CSVwriter.writerow(('id', 'images'))
-    with open(testCSVfile, 'r') as csvFile:
-        CSVreader = csv.reader(csvFile, skipinitialspace=True, delimiter=',')
-        for row in CSVreader:
-            label = row[0]
-            if label in label2result.keys():
-                CSVwriter.writerow((label, label2result[label]))
-            else:
-                if mode == 'submit0':
-                    CSVwriter.writerow((label, '0 0.0'))
-                elif mode == 'submit1':
-                    CSVwriter.writerow((label, ' '))
-    outputFile.close()
-    print('generated result file at %s' % resultCSVfile)
 
