@@ -3,7 +3,7 @@
 # main entry point
 
 from utils import *
-from lm_model import getModel
+from hp_model import getModel
 from batcher import Batcher, getImageList
 from trainer import Trainer
 
@@ -20,7 +20,8 @@ def main():
     args = parser.parse_args()
     printArgs(args)
 
-    root = '/home/gangwu/cs224n/housingprice'
+    #root = '/home/gangwu/cs224n/housingprice'
+    root = '/home/ooo/projects/housingprice'
     exp_path = root + '/experiment/' + args.experiment_name
     os.system('mkdir -p ' + exp_path)
     print('experiment path: %s' % exp_path)

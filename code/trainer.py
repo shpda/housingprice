@@ -5,7 +5,6 @@
 import torch
 import torch.nn.functional as func
 from utils import saveModel, loadModel, Logger, tryRestore
-from modules import pca, whiten
 import time
 import sys
 from tqdm import tqdm
@@ -126,24 +125,3 @@ class Trainer():
                     tmp = '%d %.6f' % (idx2label[pred[i]], conf[i])
                     label2res[ids[i]] = tmp
         return label2res
-
-    def extract(self, loader):
-        self.model.eval()  # set evaluation mode
-        label = []
-        feature = []
-        with torch.no_grad():
-            for data, ids in tqdm(loader):
-                if self.device != None:
-                    data = data.to(self.device)
-
-                output = self.model(data)
-                output = output.cpu().numpy()
-                output = np.squeeze(output)
-                #output = pca(output, 256)
-                #output = whiten(output)
-                for i in range(output.shape[0]):
-                    label.append(ids[i])
-                    #assert(len(output[i])==256):
-                    feature.append(output[i])
-        return label, feature
-

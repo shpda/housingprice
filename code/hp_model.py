@@ -23,12 +23,6 @@ class HousingPriceModel(nn.Module):
         self.modelName = 'resnet'
         #self.nnet = torchvision.models.resnet101(pretrained=True)
         self.nnet = torchvision.models.resnet50(pretrained=True)
-        #self.modelName = 'densenet'
-        #self.nnet = torchvision.models.densenet161(pretrained=True)
-        #self.modelName = 'inception'
-        #self.nnet = torchvision.models.inception_v3(pretrained=True)
-        #self.modelName = 'se_resnet'
-        #self.nnet = pretrainedmodels.se_resnet101(pretrained='imagenet')
         self.nnet.avgpool = nn.AvgPool2d(input_size // 32, stride=1)
 
         self.features = nn.Sequential(*list(self.nnet.children())[:-1])
