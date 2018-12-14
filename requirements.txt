@@ -1,0 +1,12 @@
+colorama==0.3.9
+nltk==3.2.5
+numpy==1.14.0
+six==1.11.0
+#tensorflow-gpu==1.4.1  # Change to tensorflow==1.4.1 if you need to run CPU-only tensorflow (e.g. on your laptop)
+#tensorflow==1.4.1
+#tensorflow-tensorboard==0.4.0
+tqdm==4.19.5
+#https://download.pytorch.org/whl/cpu/torch-1.0.0-cp27-cp27mu-linux_x86_64.whl
+torch==1.0
+torchvision==0.2.1
+pretrainedmodels==0.7.4

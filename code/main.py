@@ -6,7 +6,6 @@ from utils import *
 from lm_model import getModel
 from batcher import Batcher, getImageList
 from trainer import Trainer
-from nnsearch import nnsearch
 
 import os
 import torch.optim as optim
@@ -21,15 +20,15 @@ def main():
     args = parser.parse_args()
     printArgs(args)
 
-    root = '/home/ooo/projects/housingprice'
+    root = '/home/gangwu/cs224n/housingprice'
     exp_path = root + '/experiment/' + args.experiment_name
     os.system('mkdir -p ' + exp_path)
     print('experiment path: %s' % exp_path)
 
     #input_size = 128
     input_size = 224 # after crop
-    testCSVfile = '/home/ooo/projects/housingprice/csvFiles/clean.csv'
-    imageDir = '/home/ooo/projects/housingprice/images'
+    testCSVfile = root + '/csvFiles/clean.csv'
+    imageDir = root + '/images'
 
     imageList = getImageList(testCSVfile, imageDir)
     num_train, num_dev = splitTrainDevSet(imageList, 0.7)
