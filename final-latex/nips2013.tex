@@ -353,7 +353,9 @@ by truncating longer sentences and padding short sentences.
 
 Figure 2 (a) shows the linear regression results \cite{lr} on $training\_set$ and $dev\_set$
 and Figure 2 (b) shows the results of XGBoost\cite{xgboost}.
-The corresponding RMSE value is shown in Table 2.
+To note that, the linear regression only considers the numerical features,
+while ignores the house images \& descriptions.
+The corresponding RMSE and $R^2$ scores are shown in Table 1.
 From the result, we can see the XGBoost model helps remove the few outliers in the $training\_set$.
 However, the results on the $dev\_set$ is not improved which shows the XGBoost model is overfitting.
 
@@ -369,49 +371,103 @@ However, the results on the $dev\_set$ is not improved which shows the XGBoost m
 
 \begin{table*}[h]
 	\begin{center}
-		\begin{tabular}{|l|cc|}
+		\begin{tabular}{|l|cc|cc|}
 			\hline
-			RMSE &
-			TrainSet &
-			DevSet \\
+			 Method &
+			TrainSet-$RMSE$ &
+			DevSet-$RMSE$ &
+			TrainSet-$R^2$ &
+			DevSet-$R^2$ \\
 			\hline
-			LR & 0.176 & 0.170 \\
+			LR & 0.176 & 0.170 & 0.755 & 0.723 \\
 			\hline
-			XGB & 0.159 & 0.171 \\
+			XGB & 0.159 & 0.171 & 0.800 & 0.720 \\
 			\hline
 		\end{tabular}
 	\end{center}
-	\caption{RMSE with linear regression and XGBoost.}
+	\caption{RMSE and $R^2$ score with linear regression and XGBoost.}
 \end{table*}
 
-\subsection{Regression with ResNet \& Numerical Features}
+\subsection{Regression with ResNet, LSTM and Numerical Features}
 
 Adam optimizer is used during training with learning rate of $1e-3$.
-MAC is performed on Conv2 layer of ResNet50 and ends up with a 512 dimension vector.
-Since the training set is relatively small,
-it takes about 20s to train a full epoch.
-The train and dev loss is shown in Figure 7.
+The batch size is set to be 64 during training and 128 during evaluation.
 
-\begin{figure}[h]
+For the details of ResNet,
+the input image size is $64 \times 3 \times 224 \times 224$ 
+(here I assume the batch size during training).
+After feeding the images to ResNet50,
+I get its Conv3 layer with size $64 \times 512 \times 28 \times 28$.
+Then I preform maximum activation pooling on the Conv3 layer
+and ends up with the image feature vector of size $64 \times 512$.
+
+For LSTM, since I limit the text length to be 100 and using glove.6B.50d,
+the input embeding size to the RNN is  $64 \times 100 \times 50$.
+ Also, I choose the hidden layer size to be $50$,
+ therefore, I got the output also as a vector with size $64 \times 100 \times 50$.
+ Then I perform averaging on the $100$ hidden vectors and ends up with the text
+ feature vector of size $64 \times 50$.
+ 
+ For numerical features,
+ ``squre footage", ``elemSchool score", ``midSchool score", ``highSchool score"
+ ``walk score", ``transit score" and ``bike score" are used.
+ All of them are normalized at each feature.
+ Combining the numerical features with the image and text features,
+ I get a feature vector of size $64 \times 569$.
+ The combined feature vector is then feed into the linear layer to get the final prediction score.
+
+It takes about 30 seconds to load the glove vector, 12 seconds for pytorch to build the model
+and about 5 minutes to train each full epoch with GPU.
+The comparision results are shown in Table 2.
+It can be seen that the neural network based approach 
+can greatly improve the proformance from the baseline linear regression model.
+Also, the 50 dimention glove vector did not show too much performance improvement
+from just using the basic ResNet + NumFeatures.
+However, the results get improved a lot after I try the 300 dimention glove vector.
+The dev results also get improved further after I adding regulariztion on the LSTM.
+
+\begin{table}
+	\label{sample-table2}
 	\begin{center}
-		%\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
-		\includegraphics[width=0.45\linewidth]{fig/loss.png}
+		\begin{tabular}{|c|cc|}
+			\hline
+			\multicolumn{1}{|c|}{}  &\multicolumn{1}{c}{\bf Train RMSE} &\multicolumn{1}{c|}{\bf Dev RMSE} \\ 
+			\hline
+			baseline                                                   &0.176 &0.170\\
+			ResNet + NumFeatures           					&0.107 &0.121\\
+			ResNet + biLSTM + NumFeatures           &0.109 &0.110\\	
+			with glove840B300d             &0.091 &0.102\\
+			with regularization             	&0.090 &0.097\\
+			\hline
+		\end{tabular}
 	\end{center}
-	\caption{Train and dev loss on the dataset.}
-	\label{fig:long}
-	\label{fig:onecol}
-\end{figure}
+	\caption{Comparing the results of adding different components.}
+\end{table}
 
-It can be seen that the train and dev loss quickly reduced at the first few epochs.
-The best dev loss obtained is 0.0656 which is much better than just use the regression
-with numerical features.
+%\begin{figure}[h]
+%	\begin{center}
+%		%\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
+%		\includegraphics[width=0.45\linewidth]{fig/loss.png}
+%	\end{center}
+%	\caption{Train and dev loss on the dataset.}
+%	\label{fig:long}
+%	\label{fig:onecol}
+%\end{figure}
 
 %\section{Error Analysis}
 
 
 \section{Conclusion \& Future Work}
 
-The next step of this project is to implement the RNN model and combine it with the CNN \& numerical features.
+In this project, I developed a neural network model to predict the housing price
+based on the house images, descriptions and some numerical features.
+By combining CNN with RNN, the prediction performance get improved on the linear model,
+as the model can leverage both the information extracted from images and texts.
+
+There are still many works can be done on this project:
+one thing is to do the fine tuning and analysis of both the ResNet and the bi-LSTM. 
+Also, ensembling technique can be used. Different architectures can be tried for CNN (e.g DenseNet, SE-ResNet) and RNN (e.g. GRU), then be ensembled together to improve the performance.
+
 
 {\small
 	%\bibliographystyle{ieee}
