@@ -72,7 +72,7 @@ def saveModel(checkpoint_path, model, optimizer):
     state = {'state_dict': model.state_dict(),
              'optimizer' : optimizer.state_dict()}
     torch.save(state, checkpoint_path)
-    print('model saved to %s' % checkpoint_path)
+    #print('model saved to %s' % checkpoint_path)
 
 def loadModel(checkpoint_path, model, optimizer):
     state = torch.load(checkpoint_path)

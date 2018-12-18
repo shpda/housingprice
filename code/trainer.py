@@ -15,7 +15,7 @@ from sklearn.decomposition import IncrementalPCA
 
 class Trainer():
     def __init__(self, mode, model, loader, dev_loader, optimizer, device, exp_path, 
-                 log_interval=5, eval_interval=5, save_interval=100):
+                 log_interval=1, eval_interval=5, save_interval=100):
         self.model = model
         self.loader = loader
         self.dev_loader = dev_loader
@@ -41,20 +41,21 @@ class Trainer():
             self.dev_logger = Logger(exp_path, 'dev', 'w')
 
     def train(self, epoch=5):
-        self.model.train()  # set training mode
         self.iteration = 0 
         best_dev_loss = self.eval()
 
         for ep in range(epoch):
             epoch_tic = time.time()
-            for batch_idx, (data, target) in enumerate(self.loader):
-                '''
-                if self.device != None:
-                    data, target = data.cuda(self.device), target.cuda(self.device)
-                '''
+            for batch_idx, (data, target, imageName) in enumerate(self.loader):
+                self.model.train()  # set training mode
                 self.optimizer.zero_grad()
                 #self.model.zero_grad()
                 self.model.hidden = self.model.init_hidden(data[0].shape[0])
+
+                if self.device != None:
+                    data = (data[0].cuda(self.device), data[1].cuda(self.device), data[2].cuda(self.device))
+                    target = target.cuda(self.device)
+                    self.model.hidden = (self.model.hidden[0].cuda(self.device), self.model.hidden[1].cuda(self.device))
 
                 # forward pass
                 output = self.model(data)
@@ -95,22 +96,63 @@ class Trainer():
             name = 'dev'
         self.model.eval()  # set evaluation mode
         loss = 0
-        correct = 0
+        epoch = 0
         with torch.no_grad():
-            for data, target in loader:
-                '''
-                if self.device != None:
-                    data, target = data.to(self.device), target.to(self.device)
-                '''
+            maxDiff = 0
+            worstImage = None
+            realPrice = None
+            predictedPrice = None
 
+            minDiff = sys.maxsize
+            bestImage = None
+            brealPrice = None
+            bpredictedPrice = None
+            for data, target, imageName in loader:
                 # calculate accumulated loss
                 self.model.hidden = self.model.init_hidden(data[0].shape[0])
 
-                output = self.model(data)
-                loss += self.loss_fn(torch.squeeze(output), target.float()) # sum up batch loss
+                if self.device != None:
+                    data = (data[0].cuda(self.device), data[1].cuda(self.device), data[2].cuda(self.device))
+                    target = target.cuda(self.device)
+                    self.model.hidden = (self.model.hidden[0].cuda(self.device), self.model.hidden[1].cuda(self.device))
+                    #data, target = data.to(self.device), target.to(self.device)
 
-        loss /= len(loader.dataset)
+                output = self.model(data)
+                curLoss = self.loss_fn(torch.squeeze(output), target.float())
+
+                # for error analysis
+                '''
+                for out, tgt, image in zip(torch.squeeze(output), target.float(), imageName):
+                    #print((abs(out.item() - tgt.item()), maxDiff, image))
+                    if abs(out.item() - tgt.item()) > maxDiff:
+                        maxDiff = abs(out.item() - tgt.item())
+                        predictedPrice = np.exp(out.item()) - 1
+                        realPrice = np.exp(tgt.item()) - 1
+                        worstImage = image
+
+                    if abs(out.item() - tgt.item()) < minDiff:
+                        minDiff = abs(out.item() - tgt.item())
+                        bpredictedPrice = np.exp(out.item()) - 1
+                        brealPrice = np.exp(tgt.item()) - 1
+                        bestImage = image
+                '''
+
+                #print(curLoss.item())
+                loss += curLoss
+                epoch += 1
+                #print(loss.item())
+
+        loss /= epoch
+        # for error analysis
+        '''
+        print('worstImage: %s' % worstImage)
+        print('predicted price: %s' % predictedPrice)
+        print('real price: %s' % realPrice)
+        print('bestImage: %s' % bestImage)
+        print('predicted price2: %s' % bpredictedPrice)
+        print('real price2: %s' % brealPrice)
         print('{} set: Average loss: {:.4f}'.format(name, loss.item()))
+        '''
         if name == 'dev':
             self.dev_logger.writeLoss(self.iteration, loss.item())
 

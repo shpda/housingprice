@@ -147,7 +147,7 @@ In addition to different attention schemes, various other approaches have been p
 
 \section{Proposed Model}
 
-An overview of the proposed model is shown in Figure 5.
+An overview of the proposed model is shown in Figure 1.
 CNN and MAC is used to extract a global feature vector from the graph.
 Glove word embedding and Bi-directional LSTM is used to encode the house description.
 Finally, all the extracted vectors are combined together with
@@ -244,7 +244,7 @@ of the corresponding school district.
 In addition, Redfin provides a `Walk Score', `Transit Score', `Bike Score' from 1 to 100
 for describing the transportation convenience of the house.
 
-Figure 1 below shows a heat map about the correlation between different features and the sold price.
+Figure 3 below shows a heat map about the correlation between different features and the sold price.
 It can be seen that the square footage is the strongest indicator of the sell price among all the features.
 Next would be the school scores.
 The built year and zip code are shown as the weakest (or even negative) indicator of the sell price.
@@ -303,8 +303,8 @@ However, the expensive house is specially designed with a lot of nice features.
 \subsection{Images}
 
 A front view image is extracted for each house.
-Figure 3 shows the images for the 6 cheapest houses among the entire dataset
-and Figure 4 shows the 6 most expensive houses.
+Figure 6 shows the images for the 6 cheapest houses among the entire dataset
+and Figure 7 shows the 6 most expensive houses.
 Comparing the two sets, it is not hard to find the difference between them:
 expensive houses tend to be more clean, tidy and most of them 
 come with big green grass lands.
@@ -351,8 +351,8 @@ by truncating longer sentences and padding short sentences.
 
 \subsection{Baseline Implementation}
 
-Figure 2 (a) shows the linear regression results \cite{lr} on $training\_set$ and $dev\_set$
-and Figure 2 (b) shows the results of XGBoost\cite{xgboost}.
+Figure 8 (a) shows the linear regression results \cite{lr} on $training\_set$ and $dev\_set$
+and Figure 8 (b) shows the results of XGBoost\cite{xgboost}.
 To note that, the linear regression only considers the numerical features,
 while ignores the house images \& descriptions.
 The corresponding RMSE and $R^2$ scores are shown in Table 1.
@@ -362,7 +362,7 @@ However, the results on the $dev\_set$ is not improved which shows the XGBoost m
 \begin{figure}[h]
 	\begin{center}
 		%\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
-		\includegraphics[width=1\linewidth]{fig/exp.png}
+		\includegraphics[width=0.9\linewidth]{fig/exp.png}
 	\end{center}
 	\caption{(a) Linear regression. (b) XGBoost.}
 	\label{fig:long}
@@ -416,8 +416,23 @@ the input embeding size to the RNN is  $64 \times 100 \times 50$.
  I get a feature vector of size $64 \times 569$.
  The combined feature vector is then feed into the linear layer to get the final prediction score.
 
+\begin{figure}[h]
+	\begin{center}
+		%\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
+		\includegraphics[width=0.8\linewidth]{fig/loss2.png}
+	\end{center}
+	\caption{(a) Train and dev loss with only CNN model. (b) Train and dev loss with full model.}
+	\label{fig:long}
+	\label{fig:onecol}
+\end{figure}
+
 It takes about 30 seconds to load the glove vector, 12 seconds for pytorch to build the model
 and about 5 minutes to train each full epoch with GPU.
+The train and dev loss is shown in Figure 9.
+It can be seen that the train and dev loss quickly reduced after first few epochs.
+Also, with more complicated full models (i.e. Figure 9 (b)),
+overfit can happen which can be seen on the larger jumps of the dev loss.
+
 The comparision results are shown in Table 2.
 It can be seen that the neural network based approach 
 can greatly improve the proformance from the baseline linear regression model.
@@ -454,8 +469,40 @@ The dev results also get improved further after I adding regulariztion on the LS
 %	\label{fig:onecol}
 %\end{figure}
 
-%\section{Error Analysis}
+\section{Error Analysis}
 
+\begin{figure}[H]
+	\begin{center}
+		%\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
+		\includegraphics[width=0.8\linewidth]{fig/houseImg.png}
+	\end{center}
+	\caption{(a) The best predicted house. (b) The worst predicted house.}
+	\label{fig:long}
+	\label{fig:onecol}
+\end{figure}
+
+\subsection{The best predicted houses}
+
+The picture of the house is shown in Fiture 10 (a) and 
+the description of the house is shown below.
+For this house, the predicted sell price is 247252 USD and the real sold price is 247275 USD,
+which is only \$23 difference!
+
+``Darling ranch home. Single level accessibility \& an open floor plan make for an easy living space. Featuring hardwood floors, sliding doors, ceiling fans, fire place \& a spacious fenced yard with storage shed. Floor to ceiling closets allow for all of your storage needs. Grab your tool belt \& get started personalizing this charming mid century gem. Conveniently located to schools, transit, shopping, \& freeway access."
+
+\subsection{The worst predicted houses}
+
+The picture of the house is shown in Figure 10 (b) and 
+the description of the house is shown below.
+For this house, the predicted sell price is 45298 USD and the real sold price is 410000 USD.
+The reason for the misprediction is quite obvious:
+the picture is taken from a very far away place and one can barely see the house.
+Also the description is very short and the major positive thing about this house is its huge lot size.
+One way to resolve this issue is to find more training data in this case.
+Or we could add a confidence score on top of the predicted price,
+such that we will have a low confidence when predicting on image or description like this.
+
+``Tenant Occupied \& Given notice-This unique property needs some tender, love, and care! Property could possibly be parceled into 7 lots. Please text or call for more info! 2 hours notice for showings-Buyers please do your own due diligence."
 
 \section{Conclusion \& Future Work}
 

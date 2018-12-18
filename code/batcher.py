@@ -142,6 +142,7 @@ class HousingPriceData(Dataset):
     def __getitem__(self, index):
         """ Get a sample from the dataset
         """
+        imageName = None
         if self.images is not None:
             # If dataset is preloaded
             image = self.images[index]
@@ -150,6 +151,7 @@ class HousingPriceData(Dataset):
         else:
             # If on-demand data loading
             image_fn = self.filenames[index]
+            imageName = image_fn
             image = Image.open(image_fn)
             if self.labels:
                 label = float(self.labels[index])
@@ -163,8 +165,10 @@ class HousingPriceData(Dataset):
         in_sentence = torch.tensor(sentence, dtype=torch.long)
         in_feature = torch.tensor(feature, dtype=torch.float)
         llabel = np.log(label + 1)
+        #in_llabel = torch.tensor(llabel, dtype=torch.float)
         # return image, sentence and label
-        return (image, in_sentence, in_feature), llabel
+        #return (image, in_sentence, in_feature), in_llabel
+        return (image, in_sentence, in_feature), llabel, imageName
 
     def __len__(self):
         """

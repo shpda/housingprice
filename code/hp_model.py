@@ -15,10 +15,8 @@ def getModel(mode, device, input_size, hidden_dim, emb_matrix):
     print("Start building model ...")
     tic = time.time()
     model = HousingPriceModel(input_size, hidden_dim, emb_matrix)
-    '''
     if device != None:
         model = model.cuda(device)
-    '''
     toc = time.time()
     print("Build model took %.2f s" % (toc-tic))
 
@@ -33,11 +31,11 @@ class HousingPriceModel(nn.Module):
         #self.resnet = torchvision.models.resnet101(pretrained=True)
         self.resnet = torchvision.models.resnet50(pretrained=True)
         self.resnetFeatures = nn.Sequential(*list(self.resnet.children())[:-4]) # conv3_x
-	self.mac = nn.MaxPool2d(input_size // 8, stride=1)
+        self.mac = nn.MaxPool2d(input_size // 8, stride=1)
 
         # for text feature extraction
         vocab_size = len(emb_matrix)
-	self.embedding_dim = len(emb_matrix[0])
+        self.embedding_dim = len(emb_matrix[0])
         self.hidden_dim = hidden_dim
         self.word_embeddings = nn.Embedding(vocab_size, self.embedding_dim)
         self.word_embeddings.weight.data.copy_(torch.from_numpy(emb_matrix))
@@ -46,6 +44,7 @@ class HousingPriceModel(nn.Module):
         
         # linear layer
         # 512 + 50 + 7 = 569
+        #self.classifier = nn.Linear(512, 1)
         self.classifier = nn.Linear(569, 1)
 
         #for p in self.features.parameters():
@@ -53,20 +52,20 @@ class HousingPriceModel(nn.Module):
 
 
     def forward(self, x):
-	image, sentence, feature = x
+        image, sentence, feature = x
 
         # for image feature extraction
         #print('image: ' + str(image.shape))
         resnet_out = self.resnetFeatures(image)
         #print('resnet_out: ' + str(resnet_out.shape))
-	mac_resnet_out = self.mac(resnet_out)
+        mac_resnet_out = self.mac(resnet_out)
         #print('mac_resnet_out: ' + str(mac_resnet_out.shape))
-	squeezed_mac_resnet_out = torch.squeeze(mac_resnet_out) 
+        squeezed_mac_resnet_out = torch.squeeze(mac_resnet_out) 
         #print('squeezed_mac_resnet_out: ' + str(squeezed_mac_resnet_out.shape))
 
         # for text feature extraction
         #print('sentence: ' + str(sentence.shape))
-	embeds = self.word_embeddings(sentence)
+        embeds = self.word_embeddings(sentence)
         #print('embeds: ' + str(embeds.shape))
         #print('embeds: ' + str(embeds.view(sentence.shape[1], self.batch_size, -1).shape))
         #print('hidden0: ' + str(self.hidden[0].shape))
@@ -76,7 +75,7 @@ class HousingPriceModel(nn.Module):
         mean_lstm_out = torch.mean(lstm_out, 0)
         #print('mean_lstm_out: ' + str(mean_lstm_out.shape))
 
-	fv = torch.cat((squeezed_mac_resnet_out, mean_lstm_out, feature), 1)
+        fv = torch.cat((squeezed_mac_resnet_out, mean_lstm_out, feature), 1)
         #print('fv: ' + str(fv.shape))
         #fv = fv.view(fv.size(0), -1)
         fv = self.classifier(fv)
